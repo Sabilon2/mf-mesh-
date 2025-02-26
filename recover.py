@@ -37,23 +37,25 @@ m_found=""
 
 do_create() {
         outfile=$1
-        ftyp=$2
-        mdat=$3
-        printf "Creating $outfile from $ftyp $mdat\\n"
         dest="output/$outfile"
         mkdir -p output
+        [ -f $dest ] && return
+        ftyp=$2
+        mdat=$3
+        printf "$4 $5 - Testing $ftyp with $mdat...\\n"
         cat $ftyp $mdat > $dest
         jpeg="output/${outfile}.jpg"
-        printf "Creating screenshot to test video\\n"
-        set +e
-	ffmpeg -i $dest -vframes 1 -f image2 $jpeg -nostats -loglevel 0
-        set -e
-
+        #printf "Creating screenshot to test video\\n"
+        if ffmpeg -i $dest -vframes 1 -f image2 $jpeg -nostats -loglevel 0; then
+            printf "\\033[1;32m$outfile: file succesfully recovered\\033[0m\\n"
+        else
+            truncate -s 0 $dest
+        fi
 }
 
 exists () {
         #printf "Checking if result already exists for $1\\n"
-        for f in output/*_$1_*.mov.jpg; do
+        for f in output/*_$1[_.]*mov.jpg; do
                 if [ -e "$f" ]; then
                        #printf "Found: $f\\n"
                        return 0
@@ -71,19 +73,19 @@ create () {
         outfile=$i"_"$f"_"$3"_"$4".mov"
         if exists $3; then
                 if [ "$f_found" != "$3" ]; then
-                        printf "Skipping $outfile because result already found for ftyp: $3\\n"
+                        #printf "Skipping $outfile because result already found for ftyp: $3\\n"
                         f_found=$3
                 fi
                 return
         fi
         if exists $4; then
                 if [ "$m_found" != "$4" ]; then
-                        printf "Skipping $outfile because result already found for mdat: $4\\n"
+                        #printf "Skipping $outfile because result already found for mdat: $4\\n"
                         m_found=$4
                 fi
                 return
         fi
-        do_create $outfile $ftyp $mdat
+        do_create $outfile $ftyp $mdat $1 $2
 }
 
 """)
